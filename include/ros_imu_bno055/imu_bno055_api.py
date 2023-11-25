@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 Copyright (c) 2020 Robotic Arts Industries
 
@@ -38,7 +38,9 @@ Author:  Robert Vasquez Zavaleta
 
 """
 
-import serial #pyserial
+import re
+import rospy
+import serial
 import math
 import time
 import sys, os
@@ -209,13 +211,7 @@ class BoschIMU:
         # The BNO055 supports UART interface with the following settings:
         # 115200 bps, 8N1 (8 data bits, no parity bit, one stop bit)
 
-        self.serial_port = serial.Serial(port = port,
-                                         baudrate = 115200,
-                                         timeout = 0.1,
-                                         bytesize = serial.EIGHTBITS,
-                                         parity=serial.PARITY_NONE,
-                                         stopbits= serial.STOPBITS_ONE
-                                        )
+        self.serial_port = serial.Serial(port, 115200)
 
 
     # Returns number of bytes used by a INT variable
@@ -277,10 +273,8 @@ class BoschIMU:
         state = RESPONSE_ERROR
 
         if len(response) > 1:
-
-            response_header = response[0]
-            response_status = response[1]
-
+            response_header = response
+            response_status = response
             if response_header == RESPONSE_HEADER:
                 
                 if response_status == WRITE_SUCCESS:
@@ -344,7 +338,6 @@ class BoschIMU:
         attempts = 0
 
         while status != RESPONSE_OK:
-
             # Write register with data value
             command = self.build_write_command(address, data) 
             self.serial_port.write(command)
@@ -352,7 +345,6 @@ class BoschIMU:
             # Get serial response 
             command_length = 2   # Response is always made up of two bytes
             response = self.serial_port.read(command_length)
-            
             # Check response
             status = self.check_response(response)
 
@@ -361,8 +353,6 @@ class BoschIMU:
                 self._print("Error, after ten attempts the response was not received correctly")
                 status = RESPONSE_ERROR
                 break
-
-        
 
         return response, status
 
@@ -375,8 +365,7 @@ class BoschIMU:
 
         # Get serial header response
         header_response = self.serial_port.read(2)
-        status = self.check_response(header_response)
-
+        status = self.check_response(header_response) 
         # If status it is OK, get the rest of response
         if status == RESPONSE_OK:       
             response_data = self.serial_port.read(response_data_length) 
@@ -726,7 +715,6 @@ class BoschIMU:
     def update_imu_data(self):
 
         response, status = self.read_imu(VECTOR_ALL_DATA, VECTOR_ALL_DATA_LENGTH)
-
         if status == RESPONSE_OK:
             self.raw_accelerometer = response[2:8]
             self.raw_magnetometer = response[8:14]
@@ -739,21 +727,19 @@ class BoschIMU:
 
 
     def get_quaternion_orientation(self):
-
         # Get quaternion orientation vector data
-        response = self.raw_quaternion
-        
-        raw_quaternion_w = int.from_bytes(response[0:2], 'little',  signed= True) 
-        raw_quaternion_x = int.from_bytes(response[2:4], 'little',  signed= True) 
-        raw_quaternion_y = int.from_bytes(response[4:6], 'little',  signed= True) 
-        raw_quaternion_z = int.from_bytes(response[6:8], 'little',  signed= True) 
-        
+        response = self.serial_port.readline().decode('utf-8')
+        match = re.search(r'Orient: x=(-?\d+\.\d+) y=(-?\d+\.\d+) z=(-?\d+\.\d+)', response)
+        raw_quaternion_x = float(match.group(1))
+        raw_quaternion_y = float(match.group(2))
+        raw_quaternion_z = float(match.group(3))
+        rospy.loginfo("Dados de orientação >>> : x={}, y={}, z={}".format(raw_quaternion_x, raw_quaternion_y, raw_quaternion_z))
+
         # No conversion needed
-        quaternion_w = raw_quaternion_w
+        quaternion_w = 1.0
         quaternion_x = raw_quaternion_x
         quaternion_y = raw_quaternion_y
         quaternion_z = raw_quaternion_z
-     
         #self._print (raw_quaternion_w)
         #self._print (raw_quaternion_x)
         #self._print (raw_quaternion_y)
@@ -797,14 +783,13 @@ class BoschIMU:
 
 
     def get_gyroscope(self):
-
         # Get gyroscope vector data
-        response = self.raw_gyroscope
-
-        # Get gyroscope axis data
-        raw_gyroscope_x = int.from_bytes(response[0:2], 'little',  signed= True) 
-        raw_gyroscope_y = int.from_bytes(response[2:4], 'little',  signed= True) 
-        raw_gyroscope_z = int.from_bytes(response[4:6], 'little',  signed= True)
+        response = self.serial_port.readline().decode().strip()
+        match = re.search(r'Gyro: x=(-?\d+\.\d+) y=(-?\d+\.\d+) z=(-?\d+\.\d+)', response)
+        raw_gyroscope_x = float(match.group(1))
+        raw_gyroscope_y = float(match.group(2))
+        raw_gyroscope_z = float(match.group(3))
+        rospy.loginfo("Dados de gyroscope >>>: x={}, y={}, z={}".format(raw_gyroscope_x, raw_gyroscope_y, raw_gyroscope_z))
 
         if self.angular_velocity_units == RAD_PER_SECOND:
             # Convert values to an appropriate range (section 3.6.4)
@@ -830,14 +815,14 @@ class BoschIMU:
 
 
     def get_linear_acceleration(self):
-
         # Get linear acceleration vector data
-        response = self.raw_linear_acceleration
-
-        # Get linear acceleration axis data
-        raw_linear_acceleration_x = int.from_bytes(response[0:2], 'little',  signed= True) 
-        raw_linear_acceleration_y = int.from_bytes(response[2:4], 'little',  signed= True) 
-        raw_linear_acceleration_z = int.from_bytes(response[4:6], 'little',  signed= True)
+        response = self.serial_port.readline().decode().strip()
+        match = re.search(r'Accel: x=(-?\d+\.\d+) y=(-?\d+\.\d+) z=(-?\d+\.\d+)', response)
+        
+        raw_linear_acceleration_x = float(match.group(1))
+        raw_linear_acceleration_y = float(match.group(2))
+        raw_linear_acceleration_z = float(match.group(3))
+        rospy.loginfo("Dados de acceleration >>> : x={}, y={}, z={}".format(raw_linear_acceleration_x, raw_linear_acceleration_y, raw_linear_acceleration_z))
 
         if self.acceleration_units == METERS_PER_SECOND:
             # Convert values to an appropriate range (section 3.6.4)
@@ -862,14 +847,18 @@ class BoschIMU:
 
 
     def get_magnetometer(self):
-        
-        # Get magnetometer vector data
-        response = self.raw_magnetometer
-
-        # Get magnetometer axis data
-        raw_magnetometer_x = int.from_bytes(response[0:2], 'little',  signed= True) 
-        raw_magnetometer_y = int.from_bytes(response[2:4], 'little',  signed= True) 
-        raw_magnetometer_z = int.from_bytes(response[4:6], 'little',  signed= True)
+        raw_magnetometer_x = 0
+        raw_magnetometer_y = 0
+        raw_magnetometer_z = 0
+        # Get linear acceleration vector data
+        response = self.serial_port.readline().decode().strip()
+        line = response.strip()
+        match = re.search(r"x=(-?\d+\.\d+) y=(-?\d+\.\d+) z=(-?\d+\.\d+)", line)
+        if match:
+            raw_magnetometer_x = float(match.group(1))
+            raw_magnetometer_y = float(match.group(2))
+            raw_magnetometer_z = float(match.group(3))
+            rospy.loginfo("Dados de acceleration: x={}, y={}, z={}".format(raw_magnetometer_x, raw_magnetometer_y, raw_magnetometer_z))
 
         # Convert values to an appropriate range (section 3.6.4)
         magnetometer_x = raw_magnetometer_x / MAGNETOMETER_SCALE
@@ -939,6 +928,3 @@ class BoschIMU:
         #self._print(temperature)
 
         return temperature
-
-
-
