@@ -235,35 +235,46 @@ class SensorIMU:
 
     def publish_imu_data(self):
         imu_data = Imu()   
-        quaternion = self.bno055.get_quaternion_orientation()   
-        linear_acceleration = self.bno055.get_linear_acceleration()
-        gyroscope = self.bno055.get_gyroscope()
-        
-        imu_data.header.stamp = rospy.Time.now()
-        imu_data.header.frame_id = self.frame_id
-        imu_data.header.seq = self.imu_data_seq_counter
+        #rospy.sleep(1)
+        response = self.bno055.serial_port.readline()
+        try:
+            self.bno055.serial_port.readline().decode('utf-8')
+            response = self.bno055.serial_port.readline().decode('utf-8')
+            match = re.search(r'Orient: x=(-?\d+\.\d+) y=(-?\d+\.\d+) z=(-?\d+\.\d+)', response)
+            if match:
+                try: 
+                    quaternion = self.bno055.get_quaternion_orientation()   
+                    linear_acceleration = self.bno055.get_linear_acceleration()
+                    gyroscope = self.bno055.get_gyroscope()
+                    
+                    imu_data.header.stamp = rospy.Time.now()
+                    imu_data.header.frame_id = self.frame_id
+                    imu_data.header.seq = self.imu_data_seq_counter
 
-        imu_data.orientation.w = quaternion[0]
-        imu_data.orientation.x = quaternion[1]
-        imu_data.orientation.y = quaternion[2]
-        imu_data.orientation.z = quaternion[3]
+                    imu_data.orientation.w = quaternion[0]
+                    imu_data.orientation.x = quaternion[1]
+                    imu_data.orientation.y = quaternion[2]
+                    imu_data.orientation.z = quaternion[3]
 
-        imu_data.linear_acceleration.x = linear_acceleration[0]
-        imu_data.linear_acceleration.y = linear_acceleration[1]
-        imu_data.linear_acceleration.z = linear_acceleration[2]
+                    imu_data.linear_acceleration.x = linear_acceleration[0]
+                    imu_data.linear_acceleration.y = linear_acceleration[1]
+                    imu_data.linear_acceleration.z = linear_acceleration[2]
 
-        imu_data.angular_velocity.x = gyroscope[0]
-        imu_data.angular_velocity.y = gyroscope[1]
-        imu_data.angular_velocity.z = gyroscope[2]
+                    imu_data.angular_velocity.x = gyroscope[0]
+                    imu_data.angular_velocity.y = gyroscope[1]
+                    imu_data.angular_velocity.z = gyroscope[2]
 
-        imu_data.orientation_covariance[0] = -1
-        imu_data.linear_acceleration_covariance[0] = -1
-        imu_data.angular_velocity_covariance[0] = -1
+                    imu_data.orientation_covariance[0] = -1
+                    imu_data.linear_acceleration_covariance[0] = -1
+                    imu_data.angular_velocity_covariance[0] = -1
 
-        self.imu_data_seq_counter=+1
+                    self.imu_data_seq_counter=+1
 
-        self.pub_imu_data.publish(imu_data)
-
+                    self.pub_imu_data.publish(imu_data)
+                except TypeError:
+                    print('no data')
+        except UnicodeDecodeError:
+            print('no decode')
 
     def publish_imu_magnetometer(self):
 

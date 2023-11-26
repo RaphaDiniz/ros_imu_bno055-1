@@ -730,22 +730,23 @@ class BoschIMU:
         # Get quaternion orientation vector data
         response = self.serial_port.readline().decode('utf-8')
         match = re.search(r'Orient: x=(-?\d+\.\d+) y=(-?\d+\.\d+) z=(-?\d+\.\d+)', response)
-        raw_quaternion_x = float(match.group(1))
-        raw_quaternion_y = float(match.group(2))
-        raw_quaternion_z = float(match.group(3))
-        rospy.loginfo("Dados de orientação >>> : x={}, y={}, z={}".format(raw_quaternion_x, raw_quaternion_y, raw_quaternion_z))
+        if match:
+            raw_quaternion_x = float(match.group(1))
+            raw_quaternion_y = float(match.group(2))
+            raw_quaternion_z = float(match.group(3))
+            rospy.loginfo("Dados de orientação >>> : x={}, y={}, z={}".format(raw_quaternion_x, raw_quaternion_y, raw_quaternion_z))
 
-        # No conversion needed
-        quaternion_w = 1.0
-        quaternion_x = raw_quaternion_x
-        quaternion_y = raw_quaternion_y
-        quaternion_z = raw_quaternion_z
-        #self._print (raw_quaternion_w)
-        #self._print (raw_quaternion_x)
-        #self._print (raw_quaternion_y)
-        #self._print (raw_quaternion_z)
+            # No conversion needed
+            quaternion_w = 1.0
+            quaternion_x = raw_quaternion_x
+            quaternion_y = raw_quaternion_y
+            quaternion_z = raw_quaternion_z
+            #self._print (raw_quaternion_w)
+            #self._print (raw_quaternion_x)
+            #self._print (raw_quaternion_y)
+            #self._print (raw_quaternion_z)
 
-        return quaternion_w, quaternion_x, quaternion_y, quaternion_z
+            return quaternion_w, quaternion_x, quaternion_y, quaternion_z
 
 
     def get_euler_orientation(self):
@@ -786,64 +787,65 @@ class BoschIMU:
         # Get gyroscope vector data
         response = self.serial_port.readline().decode().strip()
         match = re.search(r'Gyro: x=(-?\d+\.\d+) y=(-?\d+\.\d+) z=(-?\d+\.\d+)', response)
-        raw_gyroscope_x = float(match.group(1))
-        raw_gyroscope_y = float(match.group(2))
-        raw_gyroscope_z = float(match.group(3))
-        rospy.loginfo("Dados de gyroscope >>>: x={}, y={}, z={}".format(raw_gyroscope_x, raw_gyroscope_y, raw_gyroscope_z))
+        if match:
+            raw_gyroscope_x = float(match.group(1))
+            raw_gyroscope_y = float(match.group(2))
+            raw_gyroscope_z = float(match.group(3))
+            rospy.loginfo("Dados de gyroscope >>>: x={}, y={}, z={}".format(raw_gyroscope_x, raw_gyroscope_y, raw_gyroscope_z))
 
-        if self.angular_velocity_units == RAD_PER_SECOND:
-            # Convert values to an appropriate range (section 3.6.4)
-            gyroscope_x = raw_gyroscope_x / ANGULAR_RAD_SCALE
-            gyroscope_y = raw_gyroscope_y / ANGULAR_RAD_SCALE
-            gyroscope_z = raw_gyroscope_z / ANGULAR_RAD_SCALE
+            if self.angular_velocity_units == RAD_PER_SECOND:
+                # Convert values to an appropriate range (section 3.6.4)
+                gyroscope_x = raw_gyroscope_x / ANGULAR_RAD_SCALE
+                gyroscope_y = raw_gyroscope_y / ANGULAR_RAD_SCALE
+                gyroscope_z = raw_gyroscope_z / ANGULAR_RAD_SCALE
 
-        elif self.angular_velocity_units == DEG_PER_SECOND:
-            # Convert values to an appropriate range (section 3.6.4)
-            gyroscope_x = raw_gyroscope_x / ANGULAR_DEG_SCALE
-            gyroscope_y = raw_gyroscope_y / ANGULAR_DEG_SCALE
-            gyroscope_z = raw_gyroscope_z / ANGULAR_DEG_SCALE
+            elif self.angular_velocity_units == DEG_PER_SECOND:
+                # Convert values to an appropriate range (section 3.6.4)
+                gyroscope_x = raw_gyroscope_x / ANGULAR_DEG_SCALE
+                gyroscope_y = raw_gyroscope_y / ANGULAR_DEG_SCALE
+                gyroscope_z = raw_gyroscope_z / ANGULAR_DEG_SCALE
 
-        else:
-            self._print("Error: wrong angle unit, you can use: RAD or DEG ")
-            return 
-        
-        #self._print (gyroscope_x)
-        #self._print (gyroscope_y)
-        #self._print (gyroscope_z)
+            else:
+                self._print("Error: wrong angle unit, you can use: RAD or DEG ")
+                return 
+            
+            #self._print (gyroscope_x)
+            #self._print (gyroscope_y)
+            #self._print (gyroscope_z)
 
-        return gyroscope_x, gyroscope_y, gyroscope_z
+            return gyroscope_x, gyroscope_y, gyroscope_z
 
 
     def get_linear_acceleration(self):
         # Get linear acceleration vector data
         response = self.serial_port.readline().decode().strip()
         match = re.search(r'Accel: x=(-?\d+\.\d+) y=(-?\d+\.\d+) z=(-?\d+\.\d+)', response)
-        
-        raw_linear_acceleration_x = float(match.group(1))
-        raw_linear_acceleration_y = float(match.group(2))
-        raw_linear_acceleration_z = float(match.group(3))
-        rospy.loginfo("Dados de acceleration >>> : x={}, y={}, z={}".format(raw_linear_acceleration_x, raw_linear_acceleration_y, raw_linear_acceleration_z))
+        if match:
+            raw_linear_acceleration_x = float(match.group(1))
+            raw_linear_acceleration_y = float(match.group(2))
+            raw_linear_acceleration_z = float(match.group(3))
+            rospy.loginfo("Dados de acceleration >>> : x={}, y={}, z={}".format(raw_linear_acceleration_x, raw_linear_acceleration_y, raw_linear_acceleration_z))
 
-        if self.acceleration_units == METERS_PER_SECOND:
-            # Convert values to an appropriate range (section 3.6.4)
-            linear_acceleration_x = raw_linear_acceleration_x / LINEAR_SCALE
-            linear_acceleration_y = raw_linear_acceleration_y / LINEAR_SCALE
-            linear_acceleration_z = raw_linear_acceleration_z / LINEAR_SCALE
-        
-        elif self.acceleration_units == MILI_G:
-            # No conversion needed
-            linear_acceleration_x = raw_linear_acceleration_x
-            linear_acceleration_y = raw_linear_acceleration_y
-            linear_acceleration_z = raw_linear_acceleration_z
-        else:
-            self._print("Error: wrong angle unit, you can use: METERS_PER_SECOND or MILI_G ")
-            return 
+            if self.acceleration_units == METERS_PER_SECOND:
+                # Convert values to an appropriate range (section 3.6.4)
+                linear_acceleration_x = raw_linear_acceleration_x / LINEAR_SCALE
+                linear_acceleration_y = raw_linear_acceleration_y / LINEAR_SCALE
+                linear_acceleration_z = raw_linear_acceleration_z / LINEAR_SCALE
+            
+            elif self.acceleration_units == MILI_G:
+                # No conversion needed
+                linear_acceleration_x = raw_linear_acceleration_x
+                linear_acceleration_y = raw_linear_acceleration_y
+                linear_acceleration_z = raw_linear_acceleration_z
+            else:
+                self._print("Error: wrong angle unit, you can use: METERS_PER_SECOND or MILI_G ")
+                return 
 
-        #self._print (linear_acceleration_x)
-        #self._print (linear_acceleration_y)
-        #self._print (linear_acceleration_z)
+            #self._print (linear_acceleration_x)
+            #self._print (linear_acceleration_y)
+            #self._print (linear_acceleration_z)
 
-        return linear_acceleration_x, linear_acceleration_y, linear_acceleration_z
+            return linear_acceleration_x, linear_acceleration_y, linear_acceleration_z
 
 
     def get_magnetometer(self):
