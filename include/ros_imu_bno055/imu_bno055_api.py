@@ -187,7 +187,7 @@ class BoschIMU:
 
     serial_port = serial.Serial()
 
-    def __init__(self, port = "/dev/ttyUSB0"):
+    def __init__(self, port = "/dev/ttyUSB1"):
         
         self.is_configuration_enabled = False
         self.operation_mode = -1

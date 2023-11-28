@@ -55,7 +55,7 @@ class SensorIMU:
 
     def get_ros_params(self):
 
-        self.serial_port = rospy.get_param(self.node_name + '/serial_port','/dev/ttyUSB0')
+        self.serial_port = rospy.get_param(self.node_name + '/serial_port','/dev/ttyUSB1')
         self.frame_id = rospy.get_param(self.node_name + '/frame_id', 'imu_link')
         self.operation_mode_str = rospy.get_param(self.node_name + '/operation_mode', 'IMU')
         self.oscillator_str = rospy.get_param(self.node_name + '/oscillator', 'INTERNAL')
@@ -275,6 +275,7 @@ class SensorIMU:
                     print('no data')
         except UnicodeDecodeError:
             print('no decode')
+            print(response)
 
     def publish_imu_magnetometer(self):
 
